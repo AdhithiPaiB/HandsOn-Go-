@@ -1,0 +1,15 @@
+FROM golang:1.22-alpine AS builder
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY ./cmd/booking-svc ./cmd/booking-svc
+RUN go build -ldflags="-s -w" -o /booking-svc ./cmd/booking-svc
+
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /booking-svc /booking-svc
+EXPOSE 8080
+ENTRYPOINT ["/booking-svc"]
